@@ -75,7 +75,7 @@ pub async fn gettransactions(conn: &Connection){
     let path = "/api/v1/RevenueTransactions";
     // This specifies the date range we query over
     // TODO: program this dynamically
-    let date = "?filterDateStart=2023-10-15%2016%3A00%3A00&filterDateEnd=2023-10-15%2019%3A08%3A00";
+    let date = "?filterDateStart=2023-01-01%2000%3A00%3A00&filterDateEnd=2023-10-01%2000%3A00%3A00";
     
     let superpath = path.to_owned() + date;
     let url = format!("https://clientapi.twelve.eu{}", superpath);
@@ -145,21 +145,4 @@ pub async fn gettransactions(conn: &Connection){
         }
     }
 
-    // This piece of code selects all the rows from the "transactions" table and prints it
-    // Use this for debugging and finding out what you actually put in the table.
-
-    // let mut stmt = conn.prepare("SELECT rowid, * FROM transactions").unwrap();
-    // let transaction_iter = stmt.query_map([], |row| {
-    //     Ok(Transaction {
-    //         product_id: row.get(1).unwrap(),
-    //         date: row.get(2).unwrap(),
-    //         product_amount: row.get(3).unwrap(),
-    //         product_price: row.get(4).unwrap(),
-    //         account_id: row.get(5).unwrap(),
-    //     })
-    // }).unwrap();
-
-    // for transaction in transaction_iter {
-    //     println!("Found transaction {:?}", transaction.unwrap());
-    // }
 }

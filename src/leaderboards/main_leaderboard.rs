@@ -4,16 +4,9 @@ use crate::apicalls::headermap::headermap;
 use rusqlite::{Connection, Result};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Product {
-    pub product_id: i64,
-    pub productgr_id: i64,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Transaction {
-    pub transaction_id: i64,
-    pub amount_paid: f64,
-    pub account_id: i64,
+pub struct LeaderboardEntry {
+    account_id: i64,
+    total_spending: f64
 }
 
 pub async fn main_leaderboard(conn: &Connection) {
@@ -22,18 +15,23 @@ pub async fn main_leaderboard(conn: &Connection) {
 
 
     let mut stmt = conn.prepare("
-            SELECT 
-            FROM payments, products
-            WHERE payments.")
+            SELECT transactions.account_id, SUM(transactions.product_price * transactions.product_amount)
+            FROM transactions, products_and_groups
+            WHERE 
+            transactions.product_id = products_and_groups.productid 
+            AND
+            products_and_groups.groupid IN 
+                (23504, 32502, 32501, 32498, 32497, 32496, 32465, 32404, 32267, 32266, 32265, 30759, 30762, 30776, 30785, 32060)
+            GROUP BY transactions.account_id")
             .unwrap();
-    let product_iter = stmt.query_map([], |row| {
-        Ok(Product {
-            product_id: row.get(1).unwrap(),
-            productgr_id: row.get(2).unwrap(),
+    let leaderboard_iter = stmt.query_map([], |row| {
+        Ok(LeaderboardEntry {
+            account_id: row.get(0).unwrap(),
+            total_spending: row.get(1).unwrap(),
         })
     }).unwrap();
 
-    for product in product_iter {
-        println!("Found transaction {:?}", product.unwrap());
+    for entry in leaderboard_iter {
+        println!("{:?}", entry.unwrap());
     }
 }

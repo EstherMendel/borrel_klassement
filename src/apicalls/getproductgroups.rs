@@ -54,8 +54,6 @@ pub async fn getproductgroups(conn: &Connection){
             return;
         }
     };
-
-    //println!("{:#?}", apicallformat);
     
     conn.execute(
         "CREATE TABLE products_and_groups (
@@ -81,42 +79,4 @@ pub async fn getproductgroups(conn: &Connection){
             ).unwrap();
         }
     }
-
-    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-    pub struct group {
-        id: i64,
-        name: String
-    }
-
-    let mut stmt = conn.prepare("
-    SELECT *
-    FROM products_and_groups").unwrap();
-    let group_iter = stmt.query_map([], |row| {
-        Ok(group {
-            id: row.get(1).unwrap(),
-            name: row.get(2).unwrap()
-        })
-    }).unwrap();
-
-    for group in group_iter {
-        println!("Found group name: {:#?}", group.unwrap().name);
-    }
-
-    // Checks if there are duplicates in the table
-
-    // let mut stmt = conn.prepare("SELECT productid, COUNT(*) as count
-    // FROM products
-    // GROUP BY productid
-    // HAVING COUNT(*) > 1").unwrap();
-    // let product_iter = stmt.query_map([], |row| {
-    //     Ok(Product {
-    //         product_id: row.get(0).unwrap(),
-    //         productgr_id: row.get(1).unwrap(),
-    //     })
-    // }).unwrap();
-
-    // for product in product_iter {
-    //     println!("Found transaction {:?}", product.unwrap());
-    // }
-
 }

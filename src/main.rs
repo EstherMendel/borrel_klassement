@@ -15,7 +15,6 @@ pub async fn main() {
     apicalls::gettransactions::gettransactions(&conn).await;
     apicalls::getproductgroups::getproductgroups(&conn).await;
 
-    // leaderboards::main_leaderboard::main_leaderboard(&conn).await;
+    leaderboards::main_leaderboard::main_leaderboard(&conn).await;
 
-    panic!("heyyooo")
 }
