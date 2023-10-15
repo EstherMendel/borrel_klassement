@@ -13,7 +13,7 @@ pub async fn main() {
     
     let conn = Connection::open_in_memory().unwrap();
     apicalls::gettransactions::gettransactions(&conn).await;
-    apicalls::getproductgroups::getproductgroups(&conn).await;
+    //apicalls::getproductgroups::getproductgroups(&conn).await;
 
     // leaderboards::main_leaderboard::main_leaderboard(&conn).await;
 
