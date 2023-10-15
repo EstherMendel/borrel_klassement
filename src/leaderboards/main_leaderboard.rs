@@ -11,18 +11,16 @@ pub struct LeaderboardEntry {
 
 pub async fn main_leaderboard(conn: &Connection) {
 
-
-
-
     let mut stmt = conn.prepare("
-            SELECT transactions.account_id, SUM(transactions.product_price * transactions.product_amount)
+            SELECT transactions.account_id, SUM(transactions.product_price * transactions.product_amount) AS sum
             FROM transactions, products_and_groups
             WHERE 
             transactions.product_id = products_and_groups.productid 
             AND
             products_and_groups.groupid IN 
                 (23504, 32502, 32501, 32498, 32497, 32496, 32465, 32404, 32267, 32266, 32265, 30759, 30762, 30776, 30785, 32060)
-            GROUP BY transactions.account_id")
+            GROUP BY transactions.account_id
+            ORDER BY sum ASC") 
             .unwrap();
     let leaderboard_iter = stmt.query_map([], |row| {
         Ok(LeaderboardEntry {

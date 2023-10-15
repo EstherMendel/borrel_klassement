@@ -69,13 +69,19 @@ pub struct Transaction {
     pub account_id: i64,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+
+pub struct Number {
+    pub number: i64,
+}
+
 // Get all transactions from a Twelve API call and insert it into a table named "transactions"
 pub async fn gettransactions(conn: &Connection){
     // Specifies the Twelve data source
     let path = "/api/v1/RevenueTransactions";
     // This specifies the date range we query over
     // TODO: program this dynamically
-    let date = "?filterDateStart=2023-01-01%2000%3A00%3A00&filterDateEnd=2023-10-01%2000%3A00%3A00";
+    let date = "?filterDateStart=2023-08-01%2000%3A00%3A00&filterDateEnd=2023-10-01%2000%3A00%3A00&pageSize=10000";
     
     let superpath = path.to_owned() + date;
     let url = format!("https://clientapi.twelve.eu{}", superpath);
@@ -144,5 +150,16 @@ pub async fn gettransactions(conn: &Connection){
             ).unwrap();
         }
     }
+
+    // let mut stmt = conn.prepare("SELECT COUNT(*) FROM transactions").unwrap();
+    // let person_iter = stmt.query_map([], |row| {
+    //     Ok(Number {
+    //         number: row.get(0).unwrap(),
+    //     })
+    // }).unwrap();
+
+    // for person in person_iter {
+    //     println!("Found person {:?}", person.unwrap());
+    // }
 
 }
