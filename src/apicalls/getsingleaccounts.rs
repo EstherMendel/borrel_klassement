@@ -44,6 +44,8 @@ pub async fn getsingleaccounts(conn: &Connection){
         .await
         .expect("Couldn't request api");
 
+    println!("{:#?}", apicall.text().await);
+
     let apicallformat = match apicall.json::<Root>().await {
         Ok(val) => val,
         Err(err) => {
@@ -52,13 +54,13 @@ pub async fn getsingleaccounts(conn: &Connection){
         }
     };
     
-    conn.execute(
-        "CREATE TABLE accounts (
-            accountid INTEGER PRIMARY KEY,
-            userid INTEGER
-        )", 
-        (),
-    ).unwrap();
+    // conn.execute(
+    //     "CREATE TABLE accounts (
+    //         accountid INTEGER PRIMARY KEY,
+    //         userid INTEGER
+    //     )", 
+    //     (),
+    // ).unwrap();
 
     'databaseentry: for account in apicallformat.lst_accounts {
         if account.lst_user_ids.len() > 1{
@@ -74,5 +76,21 @@ pub async fn getsingleaccounts(conn: &Connection){
             "INSERT INTO accounts (accountid, userid) VALUES (?1, ?2)", 
             (&database_entry.account_id, &database_entry.user_id)
         ).unwrap();
+    }
+
+    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+    pub struct Number {
+        pub number: i64,
+    }
+
+    let mut stmt = conn.prepare("SELECT COUNT(*) FROM accounts").unwrap();
+    let person_iter = stmt.query_map([], |row| {
+        Ok(Number {
+            number: row.get(0).unwrap(),
+        })
+    }).unwrap();
+
+    for person in person_iter {
+        println!("Found person {:?}", person.unwrap());
     }
 }

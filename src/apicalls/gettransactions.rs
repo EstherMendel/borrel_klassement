@@ -69,8 +69,8 @@ pub struct Transaction {
     pub account_id: i64,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Number {
     pub number: i64,
 }

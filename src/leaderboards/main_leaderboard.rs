@@ -5,17 +5,19 @@ use rusqlite::{Connection, Result};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LeaderboardEntry {
-    account_id: i64,
+    account_id: String,
     total_spending: f64
 }
 
 pub async fn main_leaderboard(conn: &Connection) {
 
     let mut stmt = conn.prepare("
-            SELECT transactions.account_id, SUM(transactions.product_price * transactions.product_amount) AS sum
-            FROM transactions, products_and_groups
+            SELECT users.firstname, SUM(transactions.product_price * transactions.product_amount) AS sum
+            FROM transactions, products_and_groups, accounts, users
             WHERE 
-            transactions.product_id = products_and_groups.productid 
+            transactions.product_id = products_and_groups.productid AND
+            accounts.accountid = transactions.account_id AND
+            accounts.userid = users.userid
             AND
             products_and_groups.groupid IN 
                 (23504, 32502, 32501, 32498, 32497, 32496, 32465, 32404, 32267, 32266, 32265, 30759, 30762, 30776, 30785, 32060)
