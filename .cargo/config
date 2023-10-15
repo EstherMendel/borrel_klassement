@@ -1,0 +1,2 @@
+[target_os.windows]
+rustflags = ["-C", "target-feature=+crt-static"]

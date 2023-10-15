@@ -1,0 +1,31 @@
+[package]
+name = "twelveapi"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cfonts = "1.1.2"
+chrono = "0.4.26"
+macro_env = "0.1.8"
+once_cell = "1.18.0"
+rand = "0.8.5"
+reqwest = { version = "0.11.18", features = ["rustls-tls", "json"] }
+rpassword = "7.2.0"
+serde = "1.0.186"
+serde_derive = "1.0.186"
+sha256 = "1.3.0"
+surrealdb = { version = "1.0.0", features = ["kv-mem"] }
+tokio = { version = "1.29.1", features = ["full"] }
+
+[build-dependencies]
+winres = "0.1.2"
+
+[build.env]
+passthrough = [
+    "RUST_BACKTRACE",
+    "RUST_LOG",
+    "TRAVIS",
+]
