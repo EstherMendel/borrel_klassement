@@ -23,6 +23,7 @@ pub struct LstProductGroup {
 pub struct Product {
     pub product_id: i64,
     pub productgr_id: i64,
+    pub productgr_name: String
 }
 
 pub async fn getproductgroups(conn: &Connection){
@@ -57,9 +58,10 @@ pub async fn getproductgroups(conn: &Connection){
     //println!("{:#?}", apicallformat);
     
     conn.execute(
-        "CREATE TABLE products (
+        "CREATE TABLE products_and_groups (
             productid INTEGER PRIMARY KEY,
-            groupid INTEGER
+            groupid INTEGER,
+            groupname STRING
         )", 
         (),
     ).unwrap();
@@ -70,12 +72,34 @@ pub async fn getproductgroups(conn: &Connection){
             let database_entry = Product {
                 product_id: productid,
                 productgr_id: productgroup.id.clone(),
+                productgr_name: productgroup.name.clone()
             };
 
             conn.execute(
-                "INSERT OR REPLACE INTO products (productid, groupid) VALUES (?1, ?2)", (&database_entry.product_id, &database_entry.productgr_id)
+                "INSERT OR REPLACE INTO products_and_groups (productid, groupid, groupname) VALUES (?1, ?2, ?3)", 
+                (&database_entry.product_id, &database_entry.productgr_id, &database_entry.productgr_name)
             ).unwrap();
         }
+    }
+
+    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+    pub struct group {
+        id: i64,
+        name: String
+    }
+
+    let mut stmt = conn.prepare("
+    SELECT *
+    FROM products_and_groups").unwrap();
+    let group_iter = stmt.query_map([], |row| {
+        Ok(group {
+            id: row.get(1).unwrap(),
+            name: row.get(2).unwrap()
+        })
+    }).unwrap();
+
+    for group in group_iter {
+        println!("Found group name: {:#?}", group.unwrap().name);
     }
 
     // Checks if there are duplicates in the table
