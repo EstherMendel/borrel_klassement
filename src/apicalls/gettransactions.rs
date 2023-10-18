@@ -19,8 +19,21 @@ This table has the following fields:
 // This struct represents the entire API call result, only contains the list of revenue transactions
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Root {
+    pagination: Pagination,
     #[serde(rename = "lstRevenueTransactions")]
     pub lst_revenue_transactions: Vec<LstRevenueTransactions>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct Pagination {
+    #[serde(rename = "pageNumber")]
+    page_number: i64,
+    #[serde(rename = "pageSize")]
+    page_size: i64,
+    #[serde(rename = "recordCount")]
+    record_count: i64,
+    #[serde(rename = "pageCount")]
+    page_count: i64,
 }
 
 // This represents a single revenue transaction. It contains the date, product lines, and payment lines
@@ -77,46 +90,15 @@ pub struct Number {
 
 // Get all transactions from a Twelve API call and insert it into a table named "transactions"
 pub async fn gettransactions(conn: &Connection){
-    // Specifies the Twelve data source
-    let path = "/api/v1/RevenueTransactions";
-    // This specifies the date range we query over
-    // TODO: program this dynamically
-    let date = "?filterDateStart=2023-08-01%2000%3A00%3A00&filterDateEnd=2023-10-01%2000%3A00%3A00&pageSize=10000";
-    
-    let superpath = path.to_owned() + date;
-    let url = format!("https://clientapi.twelve.eu{}", superpath);
+     // Specifies the Twelve data source
+     let path = "/api/v1/RevenueTransactions";
+     let startdate = "2023-07-01%2000%3A00%3A00";
+     let enddate = "2023-10-01%2000%3A00%3A00";
+     let pagesize = "10000";
 
-    // Gets the relevant header from the headermap function
-    let headers = match headermap(path.to_string()).await {
-        Ok(val) => val,
-        Err(err) => {
-            println!("Couldn't create a headermap\n{}", err);
-            return;
-        }
-    };
-
-    // Makes a new client and performs the API call
-    // apicall here has the entire output
-    let client = reqwest::Client::new();
-    let apicall = client
-        .get(url)
-        .headers(headers)
-        .send()
-        .await
-        .expect("Couldn't request api");
-
-    // Selects only the fields of interest from the raw API output
-    let apicallformat = match apicall.json::<Root>().await {
-        Ok(val) => val,
-        Err(err) => {
-            println!("There was an error while parsing the apicall into the Root struct\n{err}");
-            return;
-        }
-    };
-
-    // Uncomment this for debug purposes
-    // println!("{:#?}", apicallformat);
-
+    //let pagecount = 1;
+    let pagecount: i64 = getpagecount(path, startdate, enddate, pagesize).await;
+  
     // Creates the "transactions" table in the database
     conn.execute(
         "CREATE TABLE transactions (
@@ -129,25 +111,53 @@ pub async fn gettransactions(conn: &Connection){
         (),
     ).unwrap();
 
-    // Loops through the revenue transactions
-    'databaseentry: for transaction in apicallformat.lst_revenue_transactions {
-        // Loops through the product lines in a single transaction
-        // This is relevant for transactions of multiple products
-        'databasesubentry: for subtransaction in transaction.product_lines {
-            // This struct will be a single row in our table
-            let database_entry = Transaction {
-                product_id: subtransaction.product_id,
-                date: transaction.date.clone(),
-                product_amount: subtransaction.count,
-                product_price : subtransaction.price as f64,
-                account_id: transaction.payment_lines[0].payment_method_details.account_id,
-            };
+    for page in 0..pagecount {
 
-            // Insert the transaction struct into our table
-            conn.execute(
-                "INSERT INTO transactions (product_id, date, product_amount, product_price, account_id) VALUES (?1, ?2, ?3, ?4, ?5)",
-                (&database_entry.product_id, &database_entry.date, &database_entry.product_amount, &database_entry.product_price, &database_entry.account_id)
-            ).unwrap();
+        let url: String = format!("https://clientapi.twelve.eu{path}?filterDateStart={startdate}&filterDateEnd={enddate}&pageSize={pagesize}&pageNumber={page}");
+
+        // Gets the relevant header from the headermap function
+        let headers = match headermap(path.to_string()).await {
+            Ok(val) => val,
+            Err(err) => {
+                println!("Couldn't create a headermap\n{}", err);
+                return;
+            }
+        };
+        
+        // Makes a new client and performs the API call
+        // apicall here has the entire output
+        let client: reqwest::Client = reqwest::Client::new();
+
+        let apicall = client.get(url).headers(headers).send().await.unwrap();
+
+        let apicallformat = apicall.json::<Root>().await.unwrap();
+
+
+    // Uncomment this for debug purposes
+    // println!("{:#?}", apicallformat);
+
+    
+
+        // Loops through the revenue transactions
+        'databaseentry: for transaction in apicallformat.lst_revenue_transactions {
+            // Loops through the product lines in a single transaction
+            // This is relevant for transactions of multiple products
+            'databasesubentry: for subtransaction in transaction.product_lines {
+                // This struct will be a single row in our table
+                let database_entry = Transaction {
+                    product_id: subtransaction.product_id,
+                    date: transaction.date.clone(),
+                    product_amount: subtransaction.count,
+                    product_price : subtransaction.price as f64,
+                    account_id: transaction.payment_lines[0].payment_method_details.account_id,
+                };
+
+                // Insert the transaction struct into our table
+                conn.execute(
+                    "INSERT INTO transactions (product_id, date, product_amount, product_price, account_id) VALUES (?1, ?2, ?3, ?4, ?5)",
+                    (&database_entry.product_id, &database_entry.date, &database_entry.product_amount, &database_entry.product_price, &database_entry.account_id)
+                ).unwrap();
+            }
         }
     }
 
@@ -162,4 +172,16 @@ pub async fn gettransactions(conn: &Connection){
     //     println!("Found person {:?}", person.unwrap());
     // }
 
+}
+
+/// Get the number of pages there are when requesting accounts. It uses pages of size 100.
+async fn getpagecount(path: &str, startdate: &str, enddate: &str, pagesize: &str) -> i64{
+    let url = format!("https://clientapi.twelve.eu{path}?filterDateStart={startdate}&filterDateEnd={enddate}&pageSize={pagesize}&pageNumber=0");
+
+    let headers = headermap(path.to_string()).await.unwrap();
+
+    let client = reqwest::Client::new();
+    let apicall = client.get(url).headers(headers).send().await.expect("Couldn't request api");
+    let apicallformat = apicall.json::<Root>().await.unwrap();
+    return apicallformat.pagination.page_count;
 }

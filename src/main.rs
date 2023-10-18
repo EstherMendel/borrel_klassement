@@ -15,7 +15,7 @@ pub async fn main() {
     apicalls::gettransactions::gettransactions(&conn).await;
     apicalls::getproductgroups::getproductgroups(&conn).await;
     apicalls::getusers::getusers(&conn).await;
-    apicalls::getsingleaccounts_v2::getaccounts(&conn).await;
+    apicalls::getsingleaccounts::getaccounts(&conn).await;
     leaderboards::main_leaderboard::main_leaderboard(&conn).await;
 
 }
